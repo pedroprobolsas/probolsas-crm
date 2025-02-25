@@ -4,12 +4,12 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "TS_NODE_TRANSPILE_ONLY=true tsc || echo 'TypeScript errors ignored' && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview",
-    "deploy:functions": "supabase functions deploy test-woo-connection --project-ref egiyffxvnknfehlfnovf"
-  },
+  "dev": "vite",
+  "build": "tsc && vite build",
+  "start": "vite preview",
+  "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+  "deploy:functions": "supabase functions deploy test-woo-connection --project-ref egiyffxvnknfehlfnovf"
+},
   "dependencies": {
     "@radix-ui/react-tabs": "^1.0.4",
     "@supabase/supabase-js": "^2.39.7",
