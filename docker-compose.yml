@@ -2,9 +2,11 @@ version: '3.8'
 
 services:
   crm:
-    build: .
-    container_name: probolsas_crm
-    restart: unless-stopped
+    image: probolsas_crm:latest  # Se usa una imagen en lugar de `build`
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
     environment:
       - NODE_ENV=production
       - VITE_SUPABASE_ANON_KEY=${VITE_SUPABASE_ANON_KEY}
