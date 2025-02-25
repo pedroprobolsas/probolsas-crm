@@ -1,18 +1,14 @@
 import React, { useState } from 'react';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import {
-  Building2,
-  Globe,
-  FileText,
-  Users,
-  Phone,
-  Mail,
-  Briefcase,
-  Scale,
-  Calendar,
+import { 
+  Building2, 
+  Globe, 
+  FileText, 
+  Users, 
+  Phone, 
+  Mail, 
+  Briefcase, 
+  Scale, 
+  Calendar, 
   ArrowLeft,
   MessageCircle,
   Edit,
@@ -21,9 +17,15 @@ import {
   Upload,
   Plus
 } from 'lucide-react';
+import DatePicker from 'react-datepicker';
+import "react-datepicker/dist/react-datepicker.css";
+import { es } from 'date-fns/locale';
 import { ClientTimeline } from './ClientTimeline';
 import { useClientDetail } from '../lib/hooks/useClientDetail';
-import type { Client, ClientStage } from '../types';
+import { useQuotes } from '../lib/hooks/useQuotes';
+import { QuoteModal } from './quotes/QuoteModal';
+import type { Client, ClientStage, Quote } from '../types';
+import { toast } from 'sonner';
 
 interface ClientDetailViewProps {
   client: Client;
@@ -45,15 +47,30 @@ const tabs: { id: TabType; label: string; icon: React.ElementType }[] = [
 export function ClientDetailView({ client, onClose, onStageChange, onNewInteraction }: ClientDetailViewProps) {
   const [activeTab, setActiveTab] = useState<TabType>('general');
   const [isEditing, setIsEditing] = useState(false);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
   const { updateClient, isUpdating } = useClientDetail(client.id);
+  const { createQuote, isCreating: isCreatingQuote } = useQuotes(client.id);
   const [formData, setFormData] = useState<Client>(client);
 
   const handleSave = async () => {
     try {
       await updateClient(formData);
       setIsEditing(false);
+      toast.success('Cliente actualizado exitosamente');
     } catch (error) {
-      console.error('Error al actualizar:', error);
+      console.error('Error updating client:', error);
+      toast.error('Error al actualizar el cliente');
+    }
+  };
+
+  const handleCreateQuote = async (quote: Omit<Quote, 'id' | 'created_at'>) => {
+    try {
+      await createQuote(quote);
+      setShowQuoteModal(false);
+      toast.success('Cotización creada exitosamente');
+    } catch (error) {
+      console.error('Error creating quote:', error);
+      toast.error('Error al crear la cotización');
     }
   };
 
@@ -190,18 +207,140 @@ export function ClientDetailView({ client, onClose, onStageChange, onNewInteract
                 onChange={(date) => setFormData({ ...formData, general_manager_birthday: date?.toISOString() || null })}
                 dateFormat="dd/MM/yyyy"
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                locale={es}
               />
             ) : (
               <p className="mt-1 text-sm text-gray-900">
-                {client.general_manager_birthday
-                  ? format(new Date(client.general_manager_birthday), 'dd/MM/yyyy')
-                  : 'No especificado'}
+                {client.general_manager_birthday ? new Date(client.general_manager_birthday).toLocaleDateString() : 'No especificado'}
               </p>
             )}
           </div>
         </div>
       </div>
-      {/* Similar sections for Purchasing Manager and Quality Manager */}
+
+      {/* Gerente de Compras */}
+      <div className="border-b border-gray-200 pb-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Gerente de Compras</h3>
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Nombre</label>
+            {isEditing ? (
+              <input
+                type="text"
+                value={formData.purchasing_manager_name || ''}
+                onChange={(e) => setFormData({ ...formData, purchasing_manager_name: e.target.value })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            ) : (
+              <p className="mt-1 text-sm text-gray-900">{client.purchasing_manager_name || 'No especificado'}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            {isEditing ? (
+              <input
+                type="email"
+                value={formData.purchasing_manager_email || ''}
+                onChange={(e) => setFormData({ ...formData, purchasing_manager_email: e.target.value })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            ) : (
+              <p className="mt-1 text-sm text-gray-900">{client.purchasing_manager_email || 'No especificado'}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Teléfono</label>
+            {isEditing ? (
+              <input
+                type="tel"
+                value={formData.purchasing_manager_phone || ''}
+                onChange={(e) => setFormData({ ...formData, purchasing_manager_phone: e.target.value })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            ) : (
+              <p className="mt-1 text-sm text-gray-900">{client.purchasing_manager_phone || 'No especificado'}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Fecha de Cumpleaños</label>
+            {isEditing ? (
+              <DatePicker
+                selected={formData.purchasing_manager_birthday ? new Date(formData.purchasing_manager_birthday) : null}
+                onChange={(date) => setFormData({ ...formData, purchasing_manager_birthday: date?.toISOString() || null })}
+                dateFormat="dd/MM/yyyy"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                locale={es}
+              />
+            ) : (
+              <p className="mt-1 text-sm text-gray-900">
+                {client.purchasing_manager_birthday ? new Date(client.purchasing_manager_birthday).toLocaleDateString() : 'No especificado'}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Gerente de Calidad */}
+      <div>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Gerente de Calidad</h3>
+        <div className="grid grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Nombre</label>
+            {isEditing ? (
+              <input
+                type="text"
+                value={formData.quality_manager_name || ''}
+                onChange={(e) => setFormData({ ...formData, quality_manager_name: e.target.value })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            ) : (
+              <p className="mt-1 text-sm text-gray-900">{client.quality_manager_name || 'No especificado'}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            {isEditing ? (
+              <input
+                type="email"
+                value={formData.quality_manager_email || ''}
+                onChange={(e) => setFormData({ ...formData, quality_manager_email: e.target.value })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            ) : (
+              <p className="mt-1 text-sm text-gray-900">{client.quality_manager_email || 'No especificado'}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Teléfono</label>
+            {isEditing ? (
+              <input
+                type="tel"
+                value={formData.quality_manager_phone || ''}
+                onChange={(e) => setFormData({ ...formData, quality_manager_phone: e.target.value })}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              />
+            ) : (
+              <p className="mt-1 text-sm text-gray-900">{client.quality_manager_phone || 'No especificado'}</p>
+            )}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Fecha de Cumpleaños</label>
+            {isEditing ? (
+              <DatePicker
+                selected={formData.quality_manager_birthday ? new Date(formData.quality_manager_birthday) : null}
+                onChange={(date) => setFormData({ ...formData, quality_manager_birthday: date?.toISOString() || null })}
+                dateFormat="dd/MM/yyyy"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                locale={es}
+              />
+            ) : (
+              <p className="mt-1 text-sm text-gray-900">
+                {client.quality_manager_birthday ? new Date(client.quality_manager_birthday).toLocaleDateString() : 'No especificado'}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 
@@ -324,365 +463,6 @@ export function ClientDetailView({ client, onClose, onStageChange, onNewInteract
             </div>
           )}
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Materiales Utilizados</label>
-          {isEditing ? (
-            <div className="space-y-2">
-              {formData.materials?.map((material: any, index: number) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={material.name}
-                    onChange={(e) => {
-                      const newMaterials = [...(formData.materials || [])];
-                      newMaterials[index] = { ...material, name: e.target.value };
-                      setFormData({ ...formData, materials: newMaterials });
-                    }}
-                    placeholder="Material"
-                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                  <input
-                    type="text"
-                    value={material.specifications || ''}
-                    onChange={(e) => {
-                      const newMaterials = [...(formData.materials || [])];
-                      newMaterials[index] = { ...material, specifications: e.target.value };
-                      setFormData({ ...formData, materials: newMaterials });
-                    }}
-                    placeholder="Especificaciones"
-                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newMaterials = formData.materials?.filter((_, i) => i !== index);
-                      setFormData({ ...formData, materials: newMaterials });
-                    }}
-                    className="p-2 text-red-600 hover:text-red-800"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => {
-                  const newMaterials = [...(formData.materials || []), { name: '', specifications: '' }];
-                  setFormData({ ...formData, materials: newMaterials });
-                }}
-                className="mt-2 inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Agregar Material
-              </button>
-            </div>
-          ) : (
-            <div className="mt-1 space-y-2">
-              {client.materials?.map((material: any, index) => (
-                <div key={index} className="bg-gray-50 px-3 py-2 rounded">
-                  <div className="font-medium text-sm text-gray-900">{material.name}</div>
-                  {material.specifications && (
-                    <div className="text-sm text-gray-600">{material.specifications}</div>
-                  )}
-                </div>
-              )) || <p className="text-sm text-gray-500">No especificado</p>}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Technical Specifications */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Especificaciones Técnicas Frecuentes</label>
-        {isEditing ? (
-          <div className="space-y-2">
-            {formData.technical_specs?.map((spec: any, index: number) => (
-              <div key={index} className="flex gap-2">
-                <input
-                  type="text"
-                  value={spec.parameter}
-                  onChange={(e) => {
-                    const newSpecs = [...(formData.technical_specs || [])];
-                    newSpecs[index] = { ...spec, parameter: e.target.value };
-                    setFormData({ ...formData, technical_specs: newSpecs });
-                  }}
-                  placeholder="Parámetro"
-                  className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-                <input
-                  type="text"
-                  value={spec.value}
-                  onChange={(e) => {
-                    const newSpecs = [...(formData.technical_specs || [])];
-                    newSpecs[index] = { ...spec, value: e.target.value };
-                    setFormData({ ...formData, technical_specs: newSpecs });
-                  }}
-                  placeholder="Valor"
-                  className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newSpecs = formData.technical_specs?.filter((_, i) => i !== index);
-                    setFormData({ ...formData, technical_specs: newSpecs });
-                  }}
-                  className="p-2 text-red-600 hover:text-red-800"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => {
-                const newSpecs = [...(formData.technical_specs || []), { parameter: '', value: '' }];
-                setFormData({ ...formData, technical_specs: newSpecs });
-              }}
-              className="mt-2 inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Agregar Especificación
-            </button>
-          </div>
-        ) : (
-          <div className="mt-1 grid grid-cols-2 gap-4">
-            {client.technical_specs?.map((spec: any, index) => (
-              <div key={index} className="bg-gray-50 px-3 py-2 rounded">
-                <div className="text-sm text-gray-600">{spec.parameter}</div>
-                <div className="font-medium text-sm text-gray-900">{spec.value}</div>
-              </div>
-            )) || <p className="text-sm text-gray-500">No especificado</p>}
-          </div>
-        )}
-      </div>
-
-      {/* Required Certifications */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Certificaciones Requeridas</label>
-        {isEditing ? (
-          <div className="space-y-2">
-            {formData.required_certifications?.map((cert: any, index: number) => (
-              <div key={index} className="flex gap-2">
-                <input
-                  type="text"
-                  value={cert.name}
-                  onChange={(e) => {
-                    const newCerts = [...(formData.required_certifications || [])];
-                    newCerts[index] = { ...cert, name: e.target.value };
-                    setFormData({ ...formData, required_certifications: newCerts });
-                  }}
-                  placeholder="Certificación"
-                  className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                />
-                <select
-                  value={cert.status}
-                  onChange={(e) => {
-                    const newCerts = [...(formData.required_certifications || [])];
-                    newCerts[index] = { ...cert, status: e.target.value };
-                    setFormData({ ...formData, required_certifications: newCerts });
-                  }}
-                  className="w-40 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                >
-                  <option value="required">Requerida</option>
-                  <option value="in_process">En Proceso</option>
-                  <option value="obtained">Obtenida</option>
-                </select>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newCerts = formData.required_certifications?.filter((_, i) => i !== index);
-                    setFormData({ ...formData, required_certifications: newCerts });
-                  }}
-                  className="p-2 text-red-600 hover:text-red-800"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => {
-                const newCerts = [...(formData.required_certifications || []), { name: '', status: 'required' }];
-                setFormData({ ...formData, required_certifications: newCerts });
-              }}
-              className="mt-2 inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
-            >
-              <Plus className="w-4 h-4 mr-1" />
-              Agregar Certificación
-            </button>
-          </div>
-        ) : (
-          <div className="mt-1 space-y-2">
-            {client.required_certifications?.map((cert: any, index) => (
-              <div key={index} className="flex justify-between bg-gray-50 px-3 py-2 rounded">
-                <span className="text-sm text-gray-900">{cert.name}</span>
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    cert.status === 'obtained' ? 'bg-green-100 text-green-800' :
-                    cert.status === 'in_process' ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}
-                >
-                  {cert.status === 'obtained' ? 'Obtenida' :
-                   cert.status === 'in_process' ? 'En Proceso' :
-                   'Requerida'}
-                </span>
-              </div>
-            )) || <p className="text-sm text-gray-500">No especificado</p>}
-          </div>
-        )}
-      </div>
-
-      {/* Machinery and Processes */}
-      <div className="grid grid-cols-2 gap-6">
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Maquinaria del Cliente</label>
-          {isEditing ? (
-            <div className="space-y-2">
-              {formData.machinery?.map((machine: any, index: number) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={machine.name}
-                    onChange={(e) => {
-                      const newMachinery = [...(formData.machinery || [])];
-                      newMachinery[index] = { ...machine, name: e.target.value };
-                      setFormData({ ...formData, machinery: newMachinery });
-                    }}
-                    placeholder="Nombre/Modelo"
-                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                  <input
-                    type="text"
-                    value={machine.details || ''}
-                    onChange={(e) => {
-                      const newMachinery = [...(formData.machinery || [])];
-                      newMachinery[index] = { ...machine, details: e.target.value };
-                      setFormData({ ...formData, machinery: newMachinery });
-                    }}
-                    placeholder="Detalles"
-                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newMachinery = formData.machinery?.filter((_, i) => i !== index);
-                      setFormData({ ...formData, machinery: newMachinery });
-                    }}
-                    className="p-2 text-red-600 hover:text-red-800"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => {
-                  const newMachinery = [...(formData.machinery || []), { name: '', details: '' }];
-                  setFormData({ ...formData, machinery: newMachinery });
-                }}
-                className="mt-2 inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Agregar Maquinaria
-              </button>
-            </div>
-          ) : (
-            <div className="mt-1 space-y-2">
-              {client.machinery?.map((machine: any, index) => (
-                <div key={index} className="bg-gray-50 px-3 py-2 rounded">
-                  <div className="font-medium text-sm text-gray-900">{machine.name}</div>
-                  {machine.details && (
-                    <div className="text-sm text-gray-600">{machine.details}</div>
-                  )}
-                </div>
-              )) || <p className="text-sm text-gray-500">No especificado</p>}
-            </div>
-          )}
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Procesos de Empaque</label>
-          {isEditing ? (
-            <div className="space-y-2">
-              {formData.packaging_processes?.map((process: any, index: number) => (
-                <div key={index} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={process.name}
-                    onChange={(e) => {
-                      const newProcesses = [...(formData.packaging_processes || [])];
-                      newProcesses[index] = { ...process, name: e.target.value };
-                      setFormData({ ...formData, packaging_processes: newProcesses });
-                    }}
-                    placeholder="Proceso"
-                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                  <input
-                    type="text"
-                    value={process.requirements || ''}
-                    onChange={(e) => {
-                      const newProcesses = [...(formData.packaging_processes || [])];
-                      newProcesses[index] = { ...process, requirements: e.target.value };
-                      setFormData({ ...formData, packaging_processes: newProcesses });
-                    }}
-                    placeholder="Requisitos especiales"
-                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const newProcesses = formData.packaging_processes?.filter((_, i) => i !== index);
-                      setFormData({ ...formData, packaging_processes: newProcesses });
-                    }}
-                    className="p-2 text-red-600 hover:text-red-800"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => {
-                  const newProcesses = [...(formData.packaging_processes || []), { name: '', requirements: '' }];
-                  setFormData({ ...formData, packaging_processes: newProcesses });
-                }}
-                className="mt-2 inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50"
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Agregar Proceso
-              </button>
-            </div>
-          ) : (
-            <div className="mt-1 space-y-2">
-              {client.packaging_processes?.map((process: any, index) => (
-                <div key={index} className="bg-gray-50 px-3 py-2 rounded">
-                  <div className="font-medium text-sm text-gray-900">{process.name}</div>
-                  {process.requirements && (
-                    <div className="text-sm text-gray-600">{process.requirements}</div>
-                  )}
-                </div>
-              )) || <p className="text-sm text-gray-500">No especificado</p>}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Special Requirements */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700">Requisitos Especiales de Entrega</label>
-        {isEditing ? (
-          <textarea
-            value={formData.delivery_requirements || ''}
-            onChange={(e) => setFormData({ ...formData, delivery_requirements: e.target.value })}
-            rows={3}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            placeholder="Horarios, documentación, embalaje especial, etc."
-          />
-        ) : (
-          <p className="mt-1 text-sm text-gray-900 bg-gray-50 p-3 rounded">
-            {client.delivery_requirements || 'No especificado'}
-          </p>
-        )}
       </div>
     </div>
   );
@@ -750,7 +530,7 @@ export function ClientDetailView({ client, onClose, onStageChange, onNewInteract
     </div>
   );
 
-   return (
+  return (
     <div className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
@@ -764,6 +544,13 @@ export function ClientDetailView({ client, onClose, onStageChange, onNewInteract
               Volver
             </button>
             <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setShowQuoteModal(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
+              >
+                <FileText className="w-5 h-5 mr-2" />
+                Nueva Cotización
+              </button>
               <button
                 onClick={onNewInteraction}
                 className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
@@ -784,7 +571,7 @@ export function ClientDetailView({ client, onClose, onStageChange, onNewInteract
                   <button
                     onClick={() => {
                       setIsEditing(false);
-                      setFormData(client); // Revert changes
+                      setFormData(client);
                     }}
                     className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                   >
@@ -838,8 +625,15 @@ export function ClientDetailView({ client, onClose, onStageChange, onNewInteract
           {activeTab === 'fiscal' && renderFiscalTab()}
           {activeTab === 'commercial' && renderCommercialTab()}
           {activeTab === 'organizational' && renderOrganizationalTab()}
-        </div>
+        </div> {/* Quote Modal */}
+        <QuoteModal
+          isOpen={showQuoteModal}
+          onClose={() => setShowQuoteModal(false)}
+          onSubmit={handleCreateQuote}
+          clientId={client.id}
+          isSubmitting={isCreatingQuote}
+        />
       </div>
     </div>
   );
-} 
+}

@@ -1,14 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { Send, Paperclip, Smile } from 'lucide-react';
-import EmojiPicker from 'emoji-picker-react';
-import type { EmojiClickData } from 'emoji-picker-react';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
+  onAttach?: () => void;
   isLoading?: boolean;
 }
 
-export function ChatInput({ onSend, isLoading }: ChatInputProps) {
+export function ChatInput({ onSend, onAttach, isLoading }: ChatInputProps) {
   const [message, setMessage] = useState('');
   const [showEmoji, setShowEmoji] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -27,25 +26,18 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
     }
   };
 
-  const onEmojiClick = (emojiData: EmojiClickData) => {
-    setMessage(prev => prev + emojiData.emoji);
-    setShowEmoji(false);
-    inputRef.current?.focus();
-  };
-
   return (
     <div className="relative">
-      {showEmoji && (
-        <div className="absolute bottom-full right-0 mb-2">
-          <EmojiPicker onEmojiClick={onEmojiClick} />
-        </div>
-      )}
-      
       <div className="bg-white border-t border-gray-200 p-4">
         <div className="flex items-center space-x-4">
-          <button className="text-gray-500 hover:text-gray-700">
-            <Paperclip className="w-5 h-5" />
-          </button>
+          {onAttach && (
+            <button 
+              onClick={onAttach}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <Paperclip className="w-5 h-5" />
+            </button>
+          )}
           
           <input
             ref={inputRef}

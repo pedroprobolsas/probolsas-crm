@@ -10,10 +10,11 @@ import { Products } from './pages/Products';
 import { Communications } from './pages/Communications';
 import { Reports } from './pages/Reports';
 import { AgentManagement } from './pages/AgentManagement';
+import { ProductConfig } from './pages/ProductConfig';
 import { NotificationCenter } from './components/NotificationCenter';
 import { UserAvatar } from './components/UserAvatar';
 import { Toaster } from 'sonner';
-import { Menu, X, LayoutDashboard, Users, MessageSquare, BarChart3 } from 'lucide-react';
+import { Menu, X, LayoutDashboard, Users, MessageCircle, BarChart3 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from './lib/supabase';
 
@@ -119,10 +120,12 @@ function MainLayout() {
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/clients" element={<Clients />} />
+              <Route path="/clients/:id" element={<ClientDetailView />} />
               <Route path="/products" element={<Products />} />
               <Route path="/communications" element={<Communications />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/agent-management" element={<AgentManagement />} />
+              <Route path="/config/products" element={<ProductConfig />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
@@ -132,7 +135,7 @@ function MainLayout() {
         <nav className="mobile-nav">
           <NavItem to="/" icon={LayoutDashboard} label="Inicio" />
           <NavItem to="/clients" icon={Users} label="Clientes" />
-          <NavItem to="/communications" icon={MessageSquare} label="Chat" />
+          <NavItem to="/communications" icon={MessageCircle} label="Chat" />
           <NavItem to="/reports" icon={BarChart3} label="Reportes" />
         </nav>
       </div>
@@ -162,7 +165,13 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <Toaster position="top-right" />
+        <Toaster 
+          position="top-right" 
+          richColors 
+          closeButton
+          theme="light"
+          duration={4000}
+        />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route

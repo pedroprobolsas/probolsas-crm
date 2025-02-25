@@ -9,39 +9,22 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
-      clients: {
+      agents: {
         Row: {
           id: string
           created_at: string
           updated_at: string
           name: string
           email: string
-          phone: string
-          company: string
-          description: string
-          brand: string
-          status: 'active' | 'inactive' | 'at_risk'
-          tags: string[]
-          notes: string
-          ai_insights: Json
-          current_stage: 'communication' | 'quotation' | 'deposit' | 'approval' | 'shipping' | 'post_sale' | null
-          stage_start_date: string | null
-          assigned_agent_id: string | null
-          last_interaction_date: string | null
-          next_action: string | null
-          next_action_date: string | null
-          packaging_types: {
-            code: string
-            type: string
-            monthly_volume: number
-            unit: string
-            features: Record<string, string>
-            material: string
-            thickness: string
-            width: number
-            processes: string[]
-            certifications: string[]
-          }[] | null
+          whatsapp_number: string
+          role: 'admin' | 'agent'
+          status: 'online' | 'busy' | 'offline' | 'inactive'
+          avatar: string | null
+          active_chats: number
+          satisfaction_score: number
+          last_active: string
+          deactivation_reason: string | null
+          deactivation_date: string | null
         }
         Insert: {
           id?: string
@@ -49,32 +32,15 @@ export interface Database {
           updated_at?: string
           name: string
           email: string
-          phone: string
-          company: string
-          description: string
-          brand: string
-          status?: 'active' | 'inactive' | 'at_risk'
-          tags?: string[]
-          notes?: string
-          ai_insights?: Json
-          current_stage?: 'communication' | 'quotation' | 'deposit' | 'approval' | 'shipping' | 'post_sale' | null
-          stage_start_date?: string | null
-          assigned_agent_id?: string | null
-          last_interaction_date?: string | null
-          next_action?: string | null
-          next_action_date?: string | null
-          packaging_types?: {
-            code: string
-            type: string
-            monthly_volume: number
-            unit: string
-            features: Record<string, string>
-            material: string
-            thickness: string
-            width: number
-            processes: string[]
-            certifications: string[]
-          }[] | null
+          whatsapp_number: string
+          role?: 'admin' | 'agent'
+          status?: 'online' | 'busy' | 'offline' | 'inactive'
+          avatar?: string | null
+          active_chats?: number
+          satisfaction_score?: number
+          last_active?: string
+          deactivation_reason?: string | null
+          deactivation_date?: string | null
         }
         Update: {
           id?: string
@@ -82,62 +48,83 @@ export interface Database {
           updated_at?: string
           name?: string
           email?: string
-          phone?: string
-          company?: string
-          description?: string
-          brand?: string
-          status?: 'active' | 'inactive' | 'at_risk'
-          tags?: string[]
-          notes?: string
-          ai_insights?: Json
-          current_stage?: 'communication' | 'quotation' | 'deposit' | 'approval' | 'shipping' | 'post_sale' | null
-          stage_start_date?: string | null
-          assigned_agent_id?: string | null
-          last_interaction_date?: string | null
-          next_action?: string | null
-          next_action_date?: string | null
-          packaging_types?: {
-            code: string
-            type: string
-            monthly_volume: number
-            unit: string
-            features: Record<string, string>
-            material: string
-            thickness: string
-            width: number
-            processes: string[]
-            certifications: string[]
-          }[] | null
+          whatsapp_number?: string
+          role?: 'admin' | 'agent'
+          status?: 'online' | 'busy' | 'offline' | 'inactive'
+          avatar?: string | null
+          active_chats?: number
+          satisfaction_score?: number
+          last_active?: string
+          deactivation_reason?: string | null
+          deactivation_date?: string | null
+        }
+      }
+      clients_agents: {
+        Row: {
+          id: string
+          client_id: string
+          agent_id: string
+          assigned_at: string
+          active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          client_id: string
+          agent_id: string
+          assigned_at?: string
+          active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          client_id?: string
+          agent_id?: string
+          assigned_at?: string
+          active?: boolean
+          created_at?: string
+          updated_at?: string
         }
       }
     }
   }
 }
 
-import { Database } from './types/supabase';
+export type AgentDB = Database['public']['Tables']['agents']['Row']
+export type AgentInsert = Database['public']['Tables']['agents']['Insert']
+export type AgentUpdate = Database['public']['Tables']['agents']['Update']
 
-export type InteractionType = 'call' | 'email' | 'visit' | 'consultation';
-export type InteractionPriority = 'low' | 'medium' | 'high';
-export type InteractionStatus = 'pending' | 'completed' | 'cancelled';
-
-export interface ClientInteraction {
-  id: string;
-  client_id: string;
-  agent_id: string;
-  type: InteractionType;
-  date: string;
-  notes: string;
-  next_action?: string;
-  next_action_date?: string | null;
-  priority: InteractionPriority;
-  status: InteractionStatus;
-  attachments?: {
-    name: string;
-    url: string;
-    type: string;
-  }[];
-  created_at: string;
-  updated_at: string;
+export interface Agent {
+  id: string
+  name: string
+  email: string
+  whatsappNumber: string
+  role: 'admin' | 'agent'
+  status: 'online' | 'busy' | 'offline' | 'inactive'
+  avatar: string | null
+  activeChats: number
+  satisfactionScore: number
+  lastActive: string
+  createdAt: string
+  updatedAt: string
+  deactivationReason?: string | null
+  deactivationDate?: string | null
 }
 
-export type ClientInteractionInsert = Omit<ClientInteraction, 'id' | 'created_at' | 'updated_at'>;
+export interface AssignedClient {
+  id: string
+  name: string
+  company: string
+  status: 'active' | 'inactive' | 'at_risk'
+  stage: string | null
+  lastInteraction: string | null
+}
+
+export interface ClientReassignment {
+  clientId: string
+  fromAgentId: string
+  toAgentId: string
+  effectiveDate: string
+}

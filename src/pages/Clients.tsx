@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+import React, { useState, useMemo } from 'react';
 import { 
   Search, 
   Plus, 
   Filter, 
-  Loader2, 
   MessageCircle,
   User,
   X,
@@ -12,26 +13,35 @@ import {
   Tag,
   ChevronRight,
   Bell,
-  ListFilter
+  ListFilter,
+  UserCircle2,
+  Eye,
+  MessageSquare
 } from 'lucide-react';
 import { useClients } from '../lib/hooks/useClients';
 import { useInteractions } from '../lib/hooks/useInteractions';
+import { useAgents } from '../lib/hooks/useAgents';
 import { ClientModal } from '../components/ClientModal';
 import { InteractionModal } from '../components/InteractionModal';
 import { ClientDetailView } from '../components/ClientDetailView';
 import type { ClientStatus, ClientStage, Client, ClientInsert, ClientInteractionInsert } from '../lib/types';
 import { format, formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Toaster, toast } from 'sonner';
+import { toast } from 'sonner';
 
 export function Clients() {
   const [search, setSearch] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<ClientStatus | undefined>();
   const [selectedStage, setSelectedStage] = useState<ClientStage | undefined>();
+  const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>();
   const [showModal, setShowModal] = useState(false);
   const [showInteractionModal, setShowInteractionModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showDetailView, setShowDetailView] = useState(false);
+  
+  // 📌 Aquí agregamos useNavigate
+  const navigate = useNavigate();
+
   
   const { 
     clients, 
@@ -47,7 +57,15 @@ export function Clients() {
     stage: selectedStage,
   });
 
+  const { agents } = useAgents();
   const { createInteraction, isCreating: isCreatingInteraction } = useInteractions(selectedClient?.id);
+
+  const filteredClients = useMemo(() => {
+    return clients.filter(client => {
+      const matchesAgent = !selectedAgentId || client.assigned_agent_id === selectedAgentId;
+      return matchesAgent;
+    });
+  }, [clients, selectedAgentId]);
 
   const handleCreateClient = async (data: ClientInsert) => {
     try {
@@ -88,6 +106,12 @@ export function Clients() {
       console.error('Error updating stage:', error);
       toast.error('Error al actualizar la etapa');
     }
+  };
+
+  const getAssignedAgentName = (agentId: string | null) => {
+    if (!agentId) return 'Sin asignar';
+    const agent = agents?.find(a => a.id === agentId);
+    return agent ? agent.name : 'Sin asignar';
   };
 
   if (showDetailView && selectedClient) {
@@ -151,8 +175,6 @@ export function Clients() {
 
   return (
     <div className="p-8">
-      <Toaster position="top-right" />
-      
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Clientes</h1>
         <button 
@@ -201,6 +223,18 @@ export function Clients() {
                 <option value="shipping">Despacho</option>
                 <option value="post_sale">Post-venta</option>
               </select>
+              <select
+                value={selectedAgentId || ''}
+                onChange={(e) => setSelectedAgentId(e.target.value || undefined)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="">Todos los asesores</option>
+                {agents?.map(agent => (
+                  <option key={agent.id} value={agent.id}>
+                    {agent.name}
+                  </option>
+                ))}
+              </select>
               <button className="flex items-center px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
                 <Filter className="w-5 h-5 mr-2" />
                 Más Filtros
@@ -213,34 +247,58 @@ export function Clients() {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Empresa</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marca</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asesor</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Etapa</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tiempo en Etapa</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-600" colSpan={7}>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-600" colSpan={8}>
                     <div className="flex items-center justify-center">
-                      <Loader2 className="w-6 h-6 animate-spin text-blue-600 mr-2" />
-                      Cargando clientes...
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                     </div>
                   </td>
                 </tr>
-              ) : clients.length === 0 ? (
+              ) : filteredClients.length === 0 ? (
                 <tr>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-600" colSpan={7}>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-600" colSpan={8}>
                     No se encontraron clientes
                   </td>
                 </tr>
               ) : (
-                clients.map((client) => (
+                filteredClients.map((client) => (
                   <tr key={client.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center space-x-2">
+                      <button
+                          onClick={() => {
+                            setSelectedClient(client);
+                            setShowDetailView(true);
+                          }}
+                          className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full transition-colors"
+                          title="Ver detalles"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedClient(client);
+                            setShowInteractionModal(true);
+                          }}
+                          className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full transition-colors"
+                          title="Nueva interacción"
+                        >
+                          <MessageSquare className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="font-medium text-gray-900">{client.name}</div>
@@ -252,6 +310,14 @@ export function Clients() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-gray-600">
                       {client.brand}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <UserCircle2 className="w-5 h-5 text-gray-400 mr-2" />
+                        <span className="text-sm text-gray-900">
+                          {getAssignedAgentName(client.assigned_agent_id)}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[client.status]}`}>
@@ -270,26 +336,6 @@ export function Clients() {
                         <Clock className="w-4 h-4 mr-1" />
                         {getStageTime(client)}
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-2">
-                      <button
-                        onClick={() => {
-                          setSelectedClient(client);
-                          setShowInteractionModal(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        Nueva Interacción
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedClient(client);
-                          setShowDetailView(true);
-                        }}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        Ver Detalles
-                      </button>
                     </td>
                   </tr>
                 ))

@@ -7,7 +7,8 @@ import {
   MessageSquare, 
   BarChart3,
   UserCog,
-  LogOut 
+  LogOut,
+  Settings
 } from 'lucide-react';
 import { useAuthStore } from '../lib/store/authStore';
 
@@ -18,6 +19,7 @@ const navItems = [
   { to: '/communications', icon: MessageSquare, label: 'Comunicaciones' },
   { to: '/reports', icon: BarChart3, label: 'Reportes' },
   { to: '/agent-management', icon: UserCog, label: 'Gestión de Asesores', adminOnly: true },
+  { to: '/config/products', icon: Settings, label: 'Configuración', adminOnly: true },
 ];
 
 export function Sidebar({ onClose }: { onClose: () => void }) {
