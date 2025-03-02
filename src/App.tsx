@@ -14,6 +14,8 @@ import { AgentManagement } from './pages/AgentManagement';
 import { ProductConfig } from './pages/ProductConfig';
 import { MessageTemplatesPage } from './pages/MessageTemplates';
 import { Toaster } from 'sonner';
+import { ThemeProvider } from './lib/context/ThemeContext';
+import { ThemeToggle } from './components/ui/ThemeToggle';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,90 +26,95 @@ const queryClient = new QueryClient({
   },
 });
 
-function App() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <Toaster position="top-right" richColors closeButton />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          
-          {/* Rutas protegidas básicas */}
-          <Route path="/" element={
-            <AuthGuard>
-              <MainLayout>
-                <Dashboard />
-              </MainLayout>
-            </AuthGuard>
-          } />
-          <Route path="/clients" element={
-            <AuthGuard>
-              <MainLayout>
-                <Clients />
-              </MainLayout>
-            </AuthGuard>
-          } />
-          <Route path="/communications" element={
-            <AuthGuard>
-              <MainLayout>
-                <Communications />
-              </MainLayout>
-            </AuthGuard>
-          } />
-          <Route path="/reports" element={
-            <AuthGuard>
-              <MainLayout>
-                <Reports />
-              </MainLayout>
-            </AuthGuard>
-          } />
-
-          {/* Rutas protegidas solo para administradores */}
-          <Route path="/products" element={
-            <AuthGuard requireAdmin>
-              <MainLayout>
-                <Products />
-              </MainLayout>
-            </AuthGuard>
-          } />
-          <Route path="/agent-management" element={
-            <AuthGuard requireAdmin>
-              <MainLayout>
-                <AgentManagement />
-              </MainLayout>
-            </AuthGuard>
-          } />
-          <Route path="/config/products" element={
-            <AuthGuard requireAdmin>
-              <MainLayout>
-                <ProductConfig />
-              </MainLayout>
-            </AuthGuard>
-          } />
-          <Route path="/config/message-templates" element={
-            <AuthGuard requireAdmin>
-              <MainLayout>
-                <MessageTemplatesPage />
-              </MainLayout>
-            </AuthGuard>
-          } />
-
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
-    </QueryClientProvider>
-  );
-}
-
 function MainLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex h-screen bg-gray-100 dark:bg-gray-900 dark:text-white">
       <Sidebar onClose={() => {}} />
       <main className="flex-1 overflow-auto">
+        <div className="p-4 flex justify-end">
+          <ThemeToggle />
+        </div>
         {children}
       </main>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <Toaster position="top-right" richColors closeButton />
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            
+            {/* Rutas protegidas básicas */}
+            <Route path="/" element={
+              <AuthGuard>
+                <MainLayout>
+                  <Dashboard />
+                </MainLayout>
+              </AuthGuard>
+            } />
+            <Route path="/clients" element={
+              <AuthGuard>
+                <MainLayout>
+                  <Clients />
+                </MainLayout>
+              </AuthGuard>
+            } />
+            <Route path="/communications" element={
+              <AuthGuard>
+                <MainLayout>
+                  <Communications />
+                </MainLayout>
+              </AuthGuard>
+            } />
+            <Route path="/reports" element={
+              <AuthGuard>
+                <MainLayout>
+                  <Reports />
+                </MainLayout>
+              </AuthGuard>
+            } />
+
+            {/* Rutas protegidas solo para administradores */}
+            <Route path="/products" element={
+              <AuthGuard requireAdmin>
+                <MainLayout>
+                  <Products />
+                </MainLayout>
+              </AuthGuard>
+            } />
+            <Route path="/agent-management" element={
+              <AuthGuard requireAdmin>
+                <MainLayout>
+                  <AgentManagement />
+                </MainLayout>
+              </AuthGuard>
+            } />
+            <Route path="/config/products" element={
+              <AuthGuard requireAdmin>
+                <MainLayout>
+                  <ProductConfig />
+                </MainLayout>
+              </AuthGuard>
+            } />
+            <Route path="/config/message-templates" element={
+              <AuthGuard requireAdmin>
+                <MainLayout>
+                  <MessageTemplatesPage />
+                </MainLayout>
+              </AuthGuard>
+            } />
+
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Router>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 
