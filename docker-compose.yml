@@ -16,12 +16,10 @@ services:
       - "traefik.http.routers.crm.rule=Host(`crm.probolsas.co`)"
       - "traefik.http.routers.crm.entrypoints=websecure"
       - "traefik.http.routers.crm.tls=true"
-      - "traefik.http.services.crm.loadbalancer.server.port=3000"
+      - "traefik.http.services.crm.loadbalancer.server.port=4000"
     networks:
       - traefik_default
 
 networks:
   traefik_default:
     external: true
-
-

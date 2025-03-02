@@ -25,7 +25,8 @@ import { useClientDetail } from '../lib/hooks/useClientDetail';
 import { useQuotes } from '../lib/hooks/useQuotes';
 import { QuoteModal } from './quotes/QuoteModal';
 import { QuoteList } from './quotes/QuoteList';
-import type { Client, ClientStage, Quote } from '../types';
+import type { Client, ClientStage } from '../types/index';
+import type { Quote } from '../lib/types/index';
 import { toast } from 'sonner';
 
 interface ClientDetailViewProps {
@@ -69,12 +70,22 @@ export function ClientDetailView({ client, onClose, onStageChange, onNewInteract
     try {
       console.log('Creating quote with data:', quote);
       
-      // Asegurarse de que la cotización tenga la información del cliente
+      // Asegurarse de que la cotización tenga toda la información necesaria
       const quoteWithClientInfo = {
         ...quote,
         client_id: client.id,
-        client_name: client.name,
-        client_company: client.company
+        client_name: client.name || '',
+        client_company: client.company || '',
+        // Asegurarse de que todos los campos requeridos estén presentes
+        agent_id: quote.agent_id || '', // Asegurarse de incluir agent_id
+        agent_name: quote.agent_name || '', // Asegurarse de incluir agent_name
+        status: quote.status || 'draft',
+        quote_number: quote.quote_number || `COT-${Date.now()}`,
+        items: quote.items || [],
+        total_amount: quote.total_amount || 0,
+        valid_until: quote.valid_until || new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+        terms: quote.terms || '',
+        notes: quote.notes || ''
       };
       
       await createQuote(quoteWithClientInfo);
