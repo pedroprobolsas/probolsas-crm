@@ -1,15 +1,15 @@
 import React, { useState, useRef } from 'react';
-import { Send, Paperclip, Smile } from 'lucide-react';
+import { Send, Paperclip, Smile, FileText } from 'lucide-react';
 
 interface ChatInputProps {
   onSend: (message: string) => void;
   onAttach?: () => void;
+  onShowTemplates?: () => void;
   isLoading?: boolean;
 }
 
-export function ChatInput({ onSend, onAttach, isLoading }: ChatInputProps) {
+export function ChatInput({ onSend, onAttach, onShowTemplates, isLoading }: ChatInputProps) {
   const [message, setMessage] = useState('');
-  const [showEmoji, setShowEmoji] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleSend = () => {
@@ -30,14 +30,27 @@ export function ChatInput({ onSend, onAttach, isLoading }: ChatInputProps) {
     <div className="relative">
       <div className="bg-white border-t border-gray-200 p-4">
         <div className="flex items-center space-x-4">
-          {onAttach && (
-            <button 
-              onClick={onAttach}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <Paperclip className="w-5 h-5" />
-            </button>
-          )}
+          <div className="flex space-x-2">
+            {onAttach && (
+              <button
+                onClick={onAttach}
+                className="text-gray-500 hover:text-gray-700"
+                title="Adjuntar archivo"
+              >
+                <Paperclip className="w-5 h-5" />
+              </button>
+            )}
+            
+            {onShowTemplates && (
+              <button
+                onClick={onShowTemplates}
+                className="text-gray-500 hover:text-gray-700"
+                title="Plantillas de mensajes"
+              >
+                <FileText className="w-5 h-5" />
+              </button>
+            )}
+          </div>
           
           <input
             ref={inputRef}
@@ -52,7 +65,6 @@ export function ChatInput({ onSend, onAttach, isLoading }: ChatInputProps) {
           
           <button 
             className="text-gray-500 hover:text-gray-700"
-            onClick={() => setShowEmoji(!showEmoji)}
           >
             <Smile className="w-5 h-5" />
           </button>

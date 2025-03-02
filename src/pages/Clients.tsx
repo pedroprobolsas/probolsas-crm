@@ -1,5 +1,3 @@
-import { useNavigate } from 'react-router-dom';
-
 import React, { useState, useMemo } from 'react';
 import { 
   Search, 
@@ -38,10 +36,6 @@ export function Clients() {
   const [showInteractionModal, setShowInteractionModal] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [showDetailView, setShowDetailView] = useState(false);
-  
-  // 📌 Aquí agregamos useNavigate
-  const navigate = useNavigate();
-
   
   const { 
     clients, 
@@ -277,7 +271,7 @@ export function Clients() {
                   <tr key={client.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
-                      <button
+                        <button
                           onClick={() => {
                             setSelectedClient(client);
                             setShowDetailView(true);

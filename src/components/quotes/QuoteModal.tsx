@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Save, AlertTriangle, Calendar, FileText, Calculator } from 'lucide-react';
+import { X, Plus, Save, AlertTriangle, Calendar, FileText, Calculator, Edit } from 'lucide-react';
 import DatePicker from 'react-datepicker';
 import { es } from 'date-fns/locale';
 import { ProductSelector } from './ProductSelector';
-import type { Product, Quote, QuoteItem } from '../../lib/types';
+import type { Quote, QuoteItem } from '../../lib/types/index';
+import type { ProductPrice as Product } from '../../lib/types/product';
 import { toast } from 'sonner';
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -13,19 +14,63 @@ interface QuoteModalProps {
   onSubmit: (quote: Omit<Quote, 'id' | 'created_at'>) => Promise<void>;
   clientId: string;
   isSubmitting?: boolean;
+  quote?: Quote; // Cotización existente para edición
 }
 
-export function QuoteModal({ isOpen, onClose, onSubmit, clientId, isSubmitting }: QuoteModalProps) {
-  const [formData, setFormData] = useState<Omit<Quote, 'id' | 'created_at'>>({
+export function QuoteModal({ isOpen, onClose, onSubmit, clientId, isSubmitting, quote }: QuoteModalProps) {
+  const [formData, setFormData] = useState<Omit<Quote, 'created_at'>>({
+    id: quote?.id || '',
     client_id: clientId,
-    quote_number: `COT-${Date.now()}`,
-    status: 'draft',
-    total_amount: 0,
-    valid_until: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 days from now
-    terms: '',
-    notes: '',
-    items: []
+    client_name: quote?.client_name || '',
+    client_company: quote?.client_company || '',
+    agent_id: quote?.agent_id || '',
+    agent_name: quote?.agent_name || '',
+    quote_number: quote?.quote_number || `COT-${Date.now()}`,
+    status: quote?.status || 'draft',
+    total_amount: quote?.total_amount || 0,
+    valid_until: quote?.valid_until || new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(), // 15 days from now
+    terms: quote?.terms || '',
+    notes: quote?.notes || '',
+    items: quote?.items || []
   });
+
+  // Actualizar el formulario cuando cambia la cotización
+  useEffect(() => {
+    if (quote) {
+      setFormData({
+        id: quote.id,
+        client_id: quote.client_id,
+        client_name: quote.client_name,
+        client_company: quote.client_company,
+        agent_id: quote.agent_id,
+        agent_name: quote.agent_name,
+        quote_number: quote.quote_number,
+        status: quote.status,
+        total_amount: quote.total_amount,
+        valid_until: quote.valid_until,
+        terms: quote.terms,
+        notes: quote.notes,
+        items: quote.items
+      });
+    } else {
+      // Resetear el formulario para una nueva cotización
+      setFormData({
+        id: '',
+        client_id: clientId,
+        client_name: '',
+        client_company: '',
+        agent_id: '',
+        agent_name: '',
+        quote_number: `COT-${Date.now()}`,
+        status: 'draft',
+        total_amount: 0,
+        valid_until: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+        terms: '',
+        notes: '',
+        items: []
+      });
+    }
+  }, [quote, clientId]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -35,8 +80,11 @@ export function QuoteModal({ isOpen, onClose, onSubmit, clientId, isSubmitting }
   };
 
   const handleAddItem = (product: Product, quantity: number, priceLevel: 'regular' | 'price_2' | 'price_3' | 'price_4') => {
-    const price = product[priceLevel];
+    // Mapear 'regular' a 'regular_price' para acceder a la propiedad correcta en el objeto Product
+    const actualPriceLevel = priceLevel === 'regular' ? 'regular_price' : priceLevel;
+    const price = product[actualPriceLevel];
     const newItem: QuoteItem = {
+      quote_id: formData.id || '', // Se actualizará cuando se guarde la cotización
       product_id: product.id,
       product_name: product.name,
       quantity,
@@ -105,8 +153,18 @@ export function QuoteModal({ isOpen, onClose, onSubmit, clientId, isSubmitting }
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg w-full max-w-4xl p-6 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Nueva Cotización
+          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+            {quote ? (
+              <>
+                <Edit className="w-5 h-5 mr-2 text-blue-500" />
+                Editar Cotización #{quote.quote_number}
+              </>
+            ) : (
+              <>
+                <Plus className="w-5 h-5 mr-2 text-blue-500" />
+                Nueva Cotización
+              </>
+            )}
           </h2>
           <button
             onClick={onClose}
@@ -204,8 +262,11 @@ export function QuoteModal({ isOpen, onClose, onSubmit, clientId, isSubmitting }
               </label>
               <div className="mt-1">
                 <DatePicker
-                  selected={formData.valid_until}
-                  onChange={(date: Date) => setFormData(prev => ({ ...prev, valid_until: date }))}
+                  selected={formData.valid_until ? new Date(formData.valid_until) : null}
+                  onChange={(date: Date) => setFormData(prev => ({ 
+                    ...prev, 
+                    valid_until: date.toISOString() 
+                  }))}
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                   dateFormat="dd/MM/yyyy"
                   locale={es}
@@ -264,7 +325,7 @@ export function QuoteModal({ isOpen, onClose, onSubmit, clientId, isSubmitting }
               disabled={isSubmitting}
               className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
-              {isSubmitting ? 'Guardando...' : 'Guardar como Borrador'}
+              {isSubmitting ? 'Guardando...' : quote ? 'Actualizar Borrador' : 'Guardar como Borrador'}
             </button>
             <button
               type="button"
@@ -272,7 +333,7 @@ export function QuoteModal({ isOpen, onClose, onSubmit, clientId, isSubmitting }
               disabled={isSubmitting}
               className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
             >
-              {isSubmitting ? 'Enviando...' : 'Enviar Cotización'}
+              {isSubmitting ? 'Enviando...' : quote ? 'Actualizar y Enviar' : 'Enviar Cotización'}
             </button>
           </div>
         </form>

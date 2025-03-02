@@ -24,6 +24,7 @@ import { ClientTimeline } from './ClientTimeline';
 import { useClientDetail } from '../lib/hooks/useClientDetail';
 import { useQuotes } from '../lib/hooks/useQuotes';
 import { QuoteModal } from './quotes/QuoteModal';
+import { QuoteList } from './quotes/QuoteList';
 import type { Client, ClientStage, Quote } from '../types';
 import { toast } from 'sonner';
 
@@ -34,13 +35,14 @@ interface ClientDetailViewProps {
   onNewInteraction: () => void;
 }
 
-type TabType = 'general' | 'contacts' | 'fiscal' | 'commercial' | 'organizational';
+type TabType = 'general' | 'contacts' | 'fiscal' | 'commercial' | 'quotes' | 'organizational';
 
 const tabs: { id: TabType; label: string; icon: React.ElementType }[] = [
   { id: 'general', label: 'General', icon: Building2 },
   { id: 'contacts', label: 'Contactos', icon: Users },
   { id: 'fiscal', label: 'Fiscal/Legal', icon: Scale },
   { id: 'commercial', label: 'Comercial', icon: Briefcase },
+  { id: 'quotes', label: 'Cotizaciones', icon: FileText },
   { id: 'organizational', label: 'Organizacional', icon: FileText },
 ];
 
@@ -65,9 +67,26 @@ export function ClientDetailView({ client, onClose, onStageChange, onNewInteract
 
   const handleCreateQuote = async (quote: Omit<Quote, 'id' | 'created_at'>) => {
     try {
-      await createQuote(quote);
+      console.log('Creating quote with data:', quote);
+      
+      // Asegurarse de que la cotización tenga la información del cliente
+      const quoteWithClientInfo = {
+        ...quote,
+        client_id: client.id,
+        client_name: client.name,
+        client_company: client.company
+      };
+      
+      await createQuote(quoteWithClientInfo);
       setShowQuoteModal(false);
       toast.success('Cotización creada exitosamente');
+      
+      // Forzar la actualización de la pestaña de cotizaciones
+      if (activeTab === 'quotes') {
+        // Pequeño hack para forzar la actualización del componente
+        setActiveTab('general');
+        setTimeout(() => setActiveTab('quotes'), 10);
+      }
     } catch (error) {
       console.error('Error creating quote:', error);
       toast.error('Error al crear la cotización');
@@ -467,6 +486,12 @@ export function ClientDetailView({ client, onClose, onStageChange, onNewInteract
     </div>
   );
 
+  const renderQuotesTab = () => (
+    <div className="space-y-6">
+      <QuoteList clientId={client.id} />
+    </div>
+  );
+
   const renderOrganizationalTab = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-6">
@@ -621,11 +646,14 @@ export function ClientDetailView({ client, onClose, onStageChange, onNewInteract
         {/* Tab Content */}
         <div className="mt-6">
           {activeTab === 'general' && renderGeneralTab()}
-          {activeTab === 'contacts' && renderContactsTab()}
+           {activeTab === 'contacts' && renderContactsTab()}
           {activeTab === 'fiscal' && renderFiscalTab()}
           {activeTab === 'commercial' && renderCommercialTab()}
+          {activeTab === 'quotes' && renderQuotesTab()}
           {activeTab === 'organizational' && renderOrganizationalTab()}
-        </div> {/* Quote Modal */}
+        </div>
+
+        {/* Quote Modal */}
         <QuoteModal
           isOpen={showQuoteModal}
           onClose={() => setShowQuoteModal(false)}

@@ -8,26 +8,59 @@ import {
   BarChart3,
   UserCog,
   LogOut,
-  Settings
+  Settings,
+  FileText,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
+import { useState } from 'react';
 import { useAuthStore } from '../lib/store/authStore';
 
-const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Panel Principal' },
-  { to: '/clients', icon: Users, label: 'Clientes' },
-  { to: '/products', icon: Package, label: 'Productos' },
-  { to: '/communications', icon: MessageSquare, label: 'Comunicaciones' },
-  { to: '/reports', icon: BarChart3, label: 'Reportes' },
-  { to: '/agent-management', icon: UserCog, label: 'Gestión de Asesores', adminOnly: true },
-  { to: '/config/products', icon: Settings, label: 'Configuración', adminOnly: true },
-];
+interface NavItem {
+  to?: string;
+  icon: React.ElementType;
+  label: string;
+  children?: NavItem[];
+  isExpanded?: boolean;
+}
+
+const getNavItems = (isAdmin: boolean): NavItem[] => {
+  const baseItems: NavItem[] = [
+    { to: '/', icon: LayoutDashboard, label: 'Panel Principal' },
+    { to: '/clients', icon: Users, label: 'Clientes' },
+    { to: '/communications', icon: MessageSquare, label: 'Comunicaciones' },
+    { to: '/reports', icon: BarChart3, label: 'Reportes' },
+  ];
+
+  const adminItems: NavItem[] = [
+    { to: '/products', icon: Package, label: 'Productos' },
+    { to: '/agent-management', icon: UserCog, label: 'Gestión de Asesores' },
+    { 
+      icon: Settings, 
+      label: 'Configuración',
+      isExpanded: false,
+      children: [
+        { to: '/config/products', icon: Package, label: 'Productos' },
+        { to: '/config/message-templates', icon: FileText, label: 'Plantillas de Mensajes' },
+      ]
+    },
+  ];
+
+  return isAdmin ? [...baseItems, ...adminItems] : baseItems;
+};
 
 export function Sidebar({ onClose }: { onClose: () => void }) {
-  const { signOut } = useAuthStore();
-  // TODO: Replace with actual admin check from auth
-  const isAdmin = true;
-
-  const filteredNavItems = navItems.filter(item => !item.adminOnly || isAdmin);
+  const { signOut, isAdmin, profile } = useAuthStore();
+  const [navItems, setNavItems] = useState<NavItem[]>(getNavItems(isAdmin()));
+  
+  const toggleSubmenu = (index: number) => {
+    const updatedItems = [...navItems];
+    updatedItems[index] = {
+      ...updatedItems[index],
+      isExpanded: !updatedItems[index].isExpanded
+    };
+    setNavItems(updatedItems);
+  };
 
   const handleLogout = async () => {
     try {
@@ -39,24 +72,74 @@ export function Sidebar({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 px-3 py-4 flex flex-col h-full">
+      {/* User Info */}
+      <div className="px-4 py-3 mb-6 bg-gray-50 rounded-lg">
+        <p className="text-sm font-medium text-gray-900">{profile?.name}</p>
+        <p className="text-xs text-gray-500">{profile?.email}</p>
+        <span className="mt-1 inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+          {isAdmin() ? 'Administrador' : 'Asesor'}
+        </span>
+      </div>
+
       <nav className="flex-1">
         <ul className="space-y-1">
-          {filteredNavItems.map((item) => (
-            <li key={item.to}>
-              <NavLink
-                to={item.to}
-                onClick={onClose}
-                className={({ isActive }) =>
-                  `flex items-center px-4 py-2 text-sm rounded-lg ${
-                    isActive
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`
-                }
-              >
-                <item.icon className="w-5 h-5 mr-3" />
-                {item.label}
-              </NavLink>
+          {navItems.map((item, index) => (
+            <li key={item.label + index}>
+              {item.children ? (
+                <div>
+                  <button
+                    onClick={() => toggleSubmenu(index)}
+                    className="flex items-center justify-between w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
+                  >
+                    <div className="flex items-center">
+                      <item.icon className="w-5 h-5 mr-3" />
+                      {item.label}
+                    </div>
+                    {item.isExpanded ? (
+                      <ChevronDown className="w-4 h-4" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4" />
+                    )}
+                  </button>
+                  {item.isExpanded && (
+                    <ul className="mt-1 ml-6 space-y-1">
+                      {item.children.map((child) => (
+                        <li key={child.to}>
+                          <NavLink
+                            to={child.to || '#'}
+                            onClick={onClose}
+                            className={({ isActive }) =>
+                              `flex items-center px-4 py-2 text-sm rounded-lg ${
+                                isActive
+                                  ? 'bg-blue-50 text-blue-700'
+                                  : 'text-gray-700 hover:bg-gray-50'
+                              }`
+                            }
+                          >
+                            <child.icon className="w-4 h-4 mr-3" />
+                            {child.label}
+                          </NavLink>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ) : (
+                <NavLink
+                  to={item.to || '#'}
+                  onClick={onClose}
+                  className={({ isActive }) =>
+                    `flex items-center px-4 py-2 text-sm rounded-lg ${
+                      isActive
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`
+                  }
+                >
+                  <item.icon className="w-5 h-5 mr-3" />
+                  {item.label}
+                </NavLink>
+              )}
             </li>
           ))}
         </ul>

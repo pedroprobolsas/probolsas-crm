@@ -128,3 +128,151 @@ export interface ClientReassignment {
   toAgentId: string
   effectiveDate: string
 }
+
+export type ClientStatus = 'active' | 'inactive' | 'at_risk';
+export type ClientStage = 'communication' | 'quotation' | 'deposit' | 'approval' | 'shipping' | 'post_sale';
+
+export interface Client {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  brand?: string;
+  status: ClientStatus;
+  current_stage?: ClientStage;
+  stage_start_date?: string;
+  assigned_agent_id: string | null;
+  created_at: string;
+  updated_at: string;
+  description?: string;
+  tax_id?: string;
+  website?: string;
+  sector?: string;
+  business_description?: string;
+  general_manager_name?: string;
+  general_manager_email?: string;
+  general_manager_phone?: string;
+  general_manager_birthday?: string | null;
+  purchasing_manager_name?: string;
+  purchasing_manager_email?: string;
+  purchasing_manager_phone?: string;
+  purchasing_manager_birthday?: string | null;
+  quality_manager_name?: string;
+  quality_manager_email?: string;
+  quality_manager_phone?: string;
+  quality_manager_birthday?: string | null;
+  is_large_taxpayer?: boolean;
+  is_self_withholding?: boolean;
+  packaging_types?: Array<{
+    type: string;
+    monthly_volume: number;
+    unit: string;
+  }>;
+  admin_employees_count?: number;
+  plant_employees_count?: number;
+  mission?: string;
+  vision?: string;
+  tags?: string[];
+}
+
+export interface ClientInsert {
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  brand?: string;
+  status?: ClientStatus;
+  current_stage?: ClientStage;
+  stage_start_date?: string;
+  assigned_agent_id?: string;
+  description?: string;
+}
+
+export interface ClientUpdate {
+  name?: string;
+  email?: string;
+  phone?: string;
+  company?: string;
+  brand?: string;
+  status?: ClientStatus;
+  current_stage?: ClientStage;
+  stage_start_date?: string;
+  assigned_agent_id?: string;
+  description?: string;
+}
+
+export interface ClientFilters {
+  search?: string;
+  status?: ClientStatus;
+  stage?: ClientStage;
+  tags?: string[];
+}
+
+export interface Conversation {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  client_id: string;
+  agent_id: string;
+  whatsapp_chat_id: string;
+  last_message: string;
+  last_message_at: string;
+  client_name?: string;
+  client_company?: string;
+  unread_count?: number;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  content: string;
+  sender: 'agent' | 'client' | 'system';
+  sender_id: string;
+  created_at: string;
+  status: 'sent' | 'delivered' | 'read';
+  type: 'text' | 'image' | 'file' | 'location';
+  file_url?: string;
+  file_name?: string;
+  file_size?: number;
+}
+
+export interface ClientInteraction {
+  id: string;
+  client_id: string;
+  agent_id: string;
+  type: InteractionType;
+  date: string;
+  notes: string;
+  next_action?: string;
+  next_action_date?: string | null;
+  priority: InteractionPriority;
+  status: 'pending' | 'completed' | 'cancelled';
+  attachments?: Array<{
+    name: string;
+    url: string;
+    type: string;
+  }>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ClientInteractionInsert {
+  client_id: string;
+  agent_id: string;
+  type: InteractionType;
+  date: string;
+  notes: string;
+  next_action?: string;
+  next_action_date?: string | null;
+  priority: InteractionPriority;
+  status: 'pending' | 'completed' | 'cancelled';
+  attachments?: Array<{
+    name: string;
+    url: string;
+    type: string;
+  }>;
+}
+
+export type InteractionType = 'call' | 'email' | 'visit' | 'consultation';
+export type InteractionPriority = 'low' | 'medium' | 'high';

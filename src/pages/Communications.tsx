@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, MessageSquare, Send, Smile, Paperclip, Bot, User2, Phone, Video, MoreVertical, Star, Archive, Bell, BarChart2, Plus } from 'lucide-react';
+import { Search, MessageSquare, Send, Smile, Paperclip, Bot, User2, Phone, Video, MoreVertical, Star, Archive, Bell, BarChart2, Plus, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { useMockData } from '../lib/hooks/useMockData';
 import { ChatMessage } from '../components/chat/ChatMessage';
@@ -8,7 +8,12 @@ import { AISuggestions } from '../components/chat/AISuggestions';
 import { FileUploader } from '../components/chat/FileUploader';
 import { ClientTrackingPanel } from '../components/tracking/ClientTrackingPanel';
 import { NewChatModal } from '../components/chat/NewChatModal';
+import { MessageTemplates } from '../components/chat/MessageTemplates';
+import { MessageTemplateModal } from '../components/chat/MessageTemplateModal';
+import { useMessageTemplates } from '../lib/hooks/useMessageTemplates';
 import { toast } from 'sonner';
+import type { MessageTemplate } from '../components/chat/MessageTemplates';
+import type { MessageTemplateInput } from '../lib/hooks/useMessageTemplates';
 import type { Conversation, Message, Client } from '../lib/types';
 
 export function Communications() {
@@ -17,9 +22,19 @@ export function Communications() {
   const [showFileUploader, setShowFileUploader] = useState(false);
   const [showTrackingPanel, setShowTrackingPanel] = useState(false);
   const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<MessageTemplate | undefined>(undefined);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { conversations, getConversationMessages, aiSuggestions } = useMockData();
+  const { 
+    templates, 
+    isLoading: isLoadingTemplates, 
+    createTemplate, 
+    updateTemplate, 
+    deleteTemplate 
+  } = useMessageTemplates();
   const messages = selectedConversation ? getConversationMessages(selectedConversation.id) : [];
 
   useEffect(() => {
@@ -32,6 +47,8 @@ export function Communications() {
     try {
       // Implement message sending logic here
       toast.success('Mensaje enviado');
+      // Ocultar plantillas después de enviar
+      setShowTemplates(false);
     } catch (error) {
       toast.error('Error al enviar el mensaje');
     }
@@ -145,7 +162,7 @@ export function Communications() {
                     {conversation.client_company}
                   </p>
                 </div>
-                {conversation.unread_count > 0 && (
+                {conversation.unread_count && conversation.unread_count > 0 && (
                   <span className="absolute top-4 right-4 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                     {conversation.unread_count}
                   </span>
@@ -187,19 +204,47 @@ export function Communications() {
                 <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full">
                   <Bell className="w-5 h-5" />
                 </button>
-                <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full">
-                  <MoreVertical className="w-5 h-5" />
-                </button>
+              <button 
+                onClick={() => setShowTemplates(!showTemplates)}
+                className={`p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full ${
+                  showTemplates ? 'bg-blue-50 text-blue-600' : ''
+                }`}
+                title="Plantillas de mensajes"
+              >
+                <FileText className="w-5 h-5" />
+              </button>
+              <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full">
+                <MoreVertical className="w-5 h-5" />
+              </button>
               </div>
             </div>
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto px-6 py-4 bg-[#f0f2f5]">
-              <AISuggestions
-                suggestions={aiSuggestions}
-                onSelect={handleSendMessage}
-                isLoading={false}
-              />
+              {showTemplates ? (
+                <div className="mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-sm font-medium text-gray-700">Plantillas de Mensajes</h3>
+                    <button
+                      onClick={() => {
+                        setSelectedTemplate(undefined);
+                        setShowTemplateModal(true);
+                      }}
+                      className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded hover:bg-blue-100"
+                    >
+                      <Plus className="w-3 h-3 mr-1" />
+                      Nueva Plantilla
+                    </button>
+                  </div>
+                  <MessageTemplates onSelectTemplate={handleSendMessage} />
+                </div>
+              ) : (
+                <AISuggestions
+                  suggestions={aiSuggestions}
+                  onSelect={handleSendMessage}
+                  isLoading={false}
+                />
+              )}
               <div className="space-y-4">
                 {messages.map((message) => (
                   <ChatMessage
@@ -224,6 +269,7 @@ export function Communications() {
             <ChatInput
               onSend={handleSendMessage}
               onAttach={() => setShowFileUploader(true)}
+              onShowTemplates={() => setShowTemplates(!showTemplates)}
               isLoading={false}
             />
           </>
@@ -245,6 +291,24 @@ export function Communications() {
           onSelectClient={handleNewChat}
         />
       )}
+
+      {/* Template Modal */}
+      <MessageTemplateModal
+        isOpen={showTemplateModal}
+        onClose={() => {
+          setShowTemplateModal(false);
+          setSelectedTemplate(undefined);
+        }}
+        onSave={async (templateData) => {
+          if (selectedTemplate) {
+            await updateTemplate(selectedTemplate.id, templateData);
+          } else {
+            await createTemplate(templateData);
+          }
+          setShowTemplateModal(false);
+        }}
+        template={selectedTemplate}
+      />
     </div>
   );
 }

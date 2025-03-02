@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Bell, AlertTriangle, Clock, User2, MessageCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bell, AlertTriangle, Clock, User2, MessageCircle, Inbox as InboxX } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -34,6 +34,21 @@ export function NotificationCenter({
     selectedFilter === 'all' || notification.alert_level === selectedFilter
   );
 
+  // Close notification panel when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (isOpen && !target.closest('.notification-panel')) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen]);
+
   const getAlertColor = (level: Notification['alert_level']) => {
     switch (level) {
       case 'critical':
@@ -59,7 +74,7 @@ export function NotificationCenter({
       {/* Notification Bell */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-600 hover:text-gray-900"
+        className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors"
       >
         <Bell className="w-6 h-6" />
         {pendingCount > 0 && (
@@ -71,7 +86,7 @@ export function NotificationCenter({
 
       {/* Notification Panel */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg z-50 overflow-hidden">
+        <div className="notification-panel absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg z-50 overflow-hidden">
           <div className="p-4 border-b border-gray-200">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Notificaciones</h3>
@@ -89,10 +104,10 @@ export function NotificationCenter({
                 <button
                   key={filter.id}
                   onClick={() => setSelectedFilter(filter.value as any)}
-                  className={`px-3 py-1 rounded-full text-sm ${
+                  className={`px-3 py-1 rounded-full text-sm transition-colors ${
                     selectedFilter === filter.value
                       ? 'bg-blue-100 text-blue-800'
-                      : 'bg-gray-100 text-gray-600'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                   }`}
                 >
                   {filter.label}
@@ -103,15 +118,19 @@ export function NotificationCenter({
 
           <div className="max-h-[60vh] overflow-y-auto">
             {filteredNotifications.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
-                No hay notificaciones
+              <div className="flex flex-col items-center justify-center py-12 px-4 text-gray-500">
+                <InboxX className="w-12 h-12 mb-4 text-gray-400" />
+                <p className="text-lg font-medium text-gray-600">No hay alertas pendientes</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Las notificaciones aparecerán aquí cuando haya actualizaciones importantes
+                </p>
               </div>
             ) : (
               <div className="divide-y divide-gray-200">
                 {filteredNotifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`p-4 hover:bg-gray-50 cursor-pointer ${
+                    className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
                       notification.notification_status === 'pending' ? 'bg-blue-50' : ''
                     }`}
                     onClick={() => {
@@ -147,7 +166,8 @@ export function NotificationCenter({
                           e.stopPropagation();
                           // Implement quick action
                         }}
-                        className="ml-2 p-2 text-blue-600 hover:text-blue-800 rounded-full hover:bg-blue-50"
+                        className="ml-2 p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full transition-colors"
+                        title="Iniciar conversación"
                       >
                         <MessageCircle className="w-5 h-5" />
                       </button>
@@ -163,7 +183,7 @@ export function NotificationCenter({
               onClick={() => {
                 // Implement view all notifications
               }}
-              className="w-full text-center text-sm text-blue-600 hover:text-blue-800"
+              className="w-full text-center text-sm text-blue-600 hover:text-blue-800 transition-colors"
             >
               Ver todas las notificaciones
             </button>

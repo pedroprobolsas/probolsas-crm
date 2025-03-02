@@ -4,25 +4,27 @@ import { useAuthStore } from '../lib/store/authStore';
 
 interface AuthGuardProps {
   children: React.ReactNode;
+  requireAdmin?: boolean;
 }
 
-export function AuthGuard({ children }: AuthGuardProps) {
-  const { user, isLoading, checkAuth } = useAuthStore();
+export function AuthGuard({ children, requireAdmin = false }: AuthGuardProps) {
+  const { user, profile, isLoading, checkAuth, isAdmin } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    console.log('AuthGuard: Checking auth...');
     checkAuth();
   }, [checkAuth]);
 
   useEffect(() => {
-    console.log('AuthGuard: Auth state changed', { user, isLoading });
-    if (!isLoading && !user && location.pathname !== '/login') {
-      console.log('AuthGuard: Redirecting to login');
-      navigate('/login');
+    if (!isLoading) {
+      if (!user || !profile) {
+        navigate('/login');
+      } else if (requireAdmin && !isAdmin()) {
+        navigate('/');
+      }
     }
-  }, [user, isLoading, navigate, location]);
+  }, [user, profile, isLoading, navigate, location, requireAdmin, isAdmin]);
 
   if (isLoading) {
     return (
@@ -30,6 +32,10 @@ export function AuthGuard({ children }: AuthGuardProps) {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
+  }
+
+  if (!user || !profile || (requireAdmin && !isAdmin())) {
+    return null;
   }
 
   return <>{children}</>;
